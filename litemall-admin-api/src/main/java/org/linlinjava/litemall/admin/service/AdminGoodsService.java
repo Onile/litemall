@@ -1,5 +1,6 @@
 package org.linlinjava.litemall.admin.service;
 
+import com.github.pagehelper.PageInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.linlinjava.litemall.admin.dao.GoodsAllinone;
@@ -49,7 +50,7 @@ public class AdminGoodsService {
     public Object list(String goodsSn, String name,
                        Integer page, Integer limit, String sort, String order) {
         List<LitemallGoods> goodsList = goodsService.querySelective(goodsSn, name, page, limit, sort, order);
-        int total = goodsService.countSelective(goodsSn, name, page, limit, sort, order);
+        long total = PageInfo.of(goodsList).getTotal();
         Map<String, Object> data = new HashMap<>();
         data.put("total", total);
         data.put("items", goodsList);
@@ -156,14 +157,6 @@ public class AdminGoodsService {
         LitemallGoodsProduct[] products = goodsAllinone.getProducts();
 
         Integer id = goods.getId();
-        // 检查是否存在购物车商品或者订单商品
-        // 如果存在则拒绝修改商品。
-        if (orderGoodsService.checkExist(id)) {
-            return ResponseUtil.fail(GOODS_UPDATE_NOT_ALLOWED, "商品已经在订单中，不能修改");
-        }
-        if (cartService.checkExist(id)) {
-            return ResponseUtil.fail(GOODS_UPDATE_NOT_ALLOWED, "商品已经在购物车中，不能修改");
-        }
 
         //将生成的分享图片地址写入数据库
         String url = qCodeService.createGoodShareImage(goods.getId().toString(), goods.getPicUrl(), goods.getName());
@@ -196,7 +189,6 @@ public class AdminGoodsService {
             product.setGoodsId(goods.getId());
             productService.add(product);
         }
-        qCodeService.createGoodShareImage(goods.getId().toString(), goods.getPicUrl(), goods.getName());
 
         return ResponseUtil.ok();
     }
